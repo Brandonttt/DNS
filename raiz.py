@@ -7,8 +7,9 @@ TLD_SERVIDORES = {
 
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.1", 5300))
-    print("Servidor raíz escuchando en 127.0.0.1:5300")
+    # Usando la IP real del root server a.root-servers.net (198.41.0.4)
+    sock.bind(("198.41.0.4", 5300))
+    print("Servidor raíz (a.root-servers.net) escuchando en 198.41.0.4:5300")
     while True:
         data, addr = sock.recvfrom(1024)
         dominio = data.decode()
