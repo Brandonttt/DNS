@@ -1,57 +1,35 @@
 import socket
+import time
+import random
 
-def consulta_dns(servidor, pregunta):
+def consulta_resolver(dominio):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(2)
-    sock.sendto(pregunta.encode(), servidor)
+    inicio = time.time()
+    query_id = random.randint(10000, 65000)
+    mensaje = f"{query_id}|{dominio}"
+    sock.sendto(mensaje.encode(), ("127.0.0.4", 5304))
     try:
-        data, _ = sock.recvfrom(1024)
-        return data.decode()
+        data, _ = sock.recvfrom(4096)
+        fin = time.time()
+        return data, int((fin - inicio) * 1000), query_id
     except socket.timeout:
-        return None
+        return None, None, query_id
 
-def resolver_dns(dominio):
-    print(f"\n[Cliente] Resolviendo: {dominio}\n")
-    # 1. Preguntar al servidor raíz
-    respuesta = consulta_dns(("127.0.0.1", 5300), dominio)
-    if respuesta is None or not respuesta.startswith("NS "):
-        print("Fallo al contactar servidor raíz.")
-        return
-    tld_ip = respuesta.split()[1]
-    print(f"Respuesta raíz: {respuesta}")
-
-    # 2. Preguntar al TLD
-    respuesta = consulta_dns((tld_ip, 5301), dominio)
-    if respuesta is None or not respuesta.startswith("NS "):
-        print("Fallo al contactar servidor TLD.")
-        return
-    auth_ip = respuesta.split()[1]
-    print(f"Respuesta TLD: {respuesta}")
-
-    # 3. Preguntar al autoritativo
-    intentos = 0
-    while intentos < 5:
-        respuesta = consulta_dns((auth_ip, 5302), dominio)
-        if respuesta is None:
-            print("Fallo al contactar servidor autoritativo.")
-            return
-        lineas = respuesta.strip().split("\n")
-        for linea in lineas:
-            if linea.startswith("A "):
-                print(f"Respuesta autoritativo: {linea}")
-                print(f"La IP de {dominio} es {linea.split()[1]}")
-                return
-            elif linea.startswith("CNAME "):
-                nuevo_nombre = linea.split()[1]
-                print(f"Respuesta autoritativo: {linea} (siguiendo alias...)")
-                dominio = nuevo_nombre  # Cambia el dominio al alias y vuelve a preguntar
-                intentos += 1
-                break
-        else:
-            print(f"Respuesta autoritativo: {respuesta}")
-            print("No se encontró un registro A.")
-            return
+def mostrar_salida_dig(respuesta, tiempo_ms, servidor, msg_size):
+    print(respuesta.decode())
+    print(f";; Query time: {tiempo_ms if tiempo_ms is not None else '?'} msec")
+    print(f";; SERVER: {servidor} (UDP)")
+    import time as t
+    print(f";; WHEN: {t.strftime('%a %b %d %H:%M:%S UTC %Y', t.gmtime())}")
+    print(f";; MSG SIZE  rcvd: {msg_size}")
 
 if __name__ == "__main__":
     dominio = input("Dominio a resolver (ej: www.ipn.mx): ").strip()
-    resolver_dns(dominio)
+    data, tiempo_ms, query_id = consulta_resolver(dominio)
+    if data is None:
+        print("Sin respuesta del resolver.")
+    else:
+        msg_size = len(data)
+        servidor = "127.0.0.4#5304"
+        mostrar_salida_dig(data, tiempo_ms, servidor, msg_size)
