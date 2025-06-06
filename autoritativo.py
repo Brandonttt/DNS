@@ -9,6 +9,7 @@ REGISTROS = {
     },
     "portal.ipn.mx": {"CNAME": "www.ipn.mx"},
     "biblioteca.ipn.mx": {"A": "148.204.103.99"},
+    "escom.ipn.mx": {"A": "148.204.58.225"},
     "virtual.ipn.mx": {"CNAME": "www.ipn.mx"},
     "ftp.ipn.mx": {"A": "148.204.103.50"},
     "redes.ipn.mx": {"CNAME": "www.ipn.mx"},
