@@ -20,12 +20,29 @@ def consulta_resolver(dominio, servidor, puerto):
     except socket.timeout:
         return None, None, query_id
 
-def mostrar_salida_dig(respuesta, tiempo_ms, servidor, msg_size):
-    print(respuesta.decode())
+def mostrar_salida_dig(respuesta, tiempo_ms, servidor, msg_size, dominio, query_id):
+    now = time.gmtime()
+    date_str = time.strftime('%a %b %d %H:%M:%S UTC %Y', now)
+    ip = respuesta.decode().strip()
+    status = "NOERROR" if ip != "NXDOMAIN" else "NXDOMAIN"
+    answer_count = 1 if ip != "NXDOMAIN" else 0
+
+    print(f"; <<>> MiDig 1.0 <<>> {dominio}")
+    print(";; global options: +cmd")
+    print(";; Got answer:")
+    print(f";; ->>HEADER<<- opcode: QUERY, status: {status}, id: {query_id}")
+    print(f";; flags: qr rd; QUERY: 1, ANSWER: {answer_count}, AUTHORITY: 0, ADDITIONAL: 0")
+    print()
+    print(";; QUESTION SECTION:")
+    print(f";{dominio}.    IN    A")
+    print()
+    print(";; ANSWER SECTION:")
+    if ip != "NXDOMAIN":
+        print(f"{dominio}.    60    IN    A    {ip}")
+    print()
     print(f";; Query time: {tiempo_ms if tiempo_ms is not None else '?'} msec")
     print(f";; SERVER: {servidor} (UDP)")
-    import time as t
-    print(f";; WHEN: {t.strftime('%a %b %d %H:%M:%S UTC %Y', t.gmtime())}")
+    print(f";; WHEN: {date_str}")
     print(f";; MSG SIZE  rcvd: {msg_size}")
 
 if __name__ == "__main__":
@@ -52,4 +69,4 @@ if __name__ == "__main__":
         print("Sin respuesta del resolver.")
     else:
         msg_size = len(data)
-        mostrar_salida_dig(data, tiempo_ms, f"{servidor}#{args.puerto}", msg_size)
+        mostrar_salida_dig(data, tiempo_ms, f"{servidor}#{args.puerto}", msg_size, dominio, query_id)
